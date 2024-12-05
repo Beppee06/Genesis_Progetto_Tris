@@ -1,0 +1,22 @@
+﻿################################################################################
+# Il file gitignore è stato creato automaticamente da Microsoft(R) Visual Studio.
+################################################################################
+
+/node_modules/globals/readme.md
+/node_modules/file-entry-cache/README.md
+/node_modules/find-up/package.json
+/node_modules/flat-cache/package.json
+/node_modules/find-up/index.d.ts
+/node_modules/flat-cache/README.md
+/node_modules/flat-cache/changelog.md
+/node_modules/flat-cache/LICENSE
+/node_modules/flat-cache/src/cache.js
+/node_modules/flat-cache/src/utils.js
+/node_modules/find-up/license
+/node_modules/flatted/cjs/index.js
+/node_modules/flat-cache/src/del.js
+/node_modules/flatted/cjs/package.json
+/node_modules/flatted/es.js
+/node_modules/flatted/esm.js
+/node_modules/flatted/esm/index.js
+/node_modules/flatted/python/flatted.py
