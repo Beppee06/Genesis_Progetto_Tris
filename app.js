@@ -34,56 +34,92 @@ const winningConditions4x4 = [
 
 function checkWinner() {
     const winningConditions = (gridSize === 3) ? winningConditions3x3 : winningConditions4x4;
-}
-function createBoard() {
-    board.innerHTML = '';
-    board.style.gridTemplateColumns = `repeat(${gridSize}, 100px)`;
-
-    for (let i = 0; i < gridSize * gridSize; i++) {
-        const cell = document.createElement('div');
-        cell.classList.add('cell');
-        cell.dataset.index = i;
-        cell.addEventListener('click', handleCellClick);
-        board.appendChild(cell);
-
-        if (gameState[i]) {
-            cell.textContent = gameState[i];
-            cell.classList.add('taken');
+    for (let condition of winningConditions) {
+        const [a, b, c] = condition;
+        if (gameState[a] && gameState[a] === gameState[b] && gameState[a] === gameState[c]) {
+            return gameState[a];
         }
     }
+    return gameState.includes(null) ? null : 'Draw';
 }
 
-function resetGame(keepSymbols = false) {
-    selectCurrentFirstPlayer();
-    gameActive = true;
-
-    if (!keepSymbols) {
-        gameState.fill(null);
+function updateMessage(winner) {
+    if (winner === 'Draw') {
+        message.textContent = "It's a draw!";
+    } else if (winner) {
+        message.textContent = `Player ${winner} wins!`;
+    } else {
+        message.textContent = `Player ${currentPlayer}'s turn`;
     }
-
-    message.textContent = "Player " + currentPlayer + "'s turn";
-    createBoard();
 }
 
-function toggleGridSize() {
-    const newSize = (gridSize === 3) ? 4 : 3;
-    const newGameState = Array(newSize * newSize).fill(null);
+function handleCellClick(e) {
+    const cellIndex = e.target.dataset.index;
 
-    for (let row = 0; row < Math.min(gridSize, newSize); row++) {
-        for (let col = 0; col < Math.min(gridSize, newSize); col++) {
-            const oldIndex = row * gridSize + col;
-            const newIndex = row * newSize + col;
-            newGameState[newIndex] = gameState[oldIndex];
+    if (!gameActive || gameState[cellIndex]) return;
+
+    gameState[cellIndex] = currentPlayer;
+    e.target.textContent = currentPlayer;
+    e.target.classList.add('taken');
+
+    const winner = checkWinner();
+    if (winner) {
+        gameActive = false;
+        updateMessage(winner);
+    } else {
+        currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+        updateMessage(null);
+    }
+}
+    function createBoard() {
+        board.innerHTML = '';
+        board.style.gridTemplateColumns = `repeat(${gridSize}, 100px)`;
+
+        for (let i = 0; i < gridSize * gridSize; i++) {
+            const cell = document.createElement('div');
+            cell.classList.add('cell');
+            cell.dataset.index = i;
+            cell.addEventListener('click', handleCellClick);
+            board.appendChild(cell);
+
+            if (gameState[i]) {
+                cell.textContent = gameState[i];
+                cell.classList.add('taken');
+            }
         }
     }
 
-    gridSize = newSize;
-    gameState = newGameState;
-    resetGame(true);
-}
+    function resetGame(keepSymbols = false) {
+        selectCurrentFirstPlayer();
+        gameActive = true;
 
-resetButton.addEventListener('click', () => resetGame());
-toggleSizeButton.addEventListener('click', toggleGridSize);
+        if (!keepSymbols) {
+            gameState.fill(null);
+        }
 
-// Initialize game
-resetGame();
+        message.textContent = "Player " + currentPlayer + "'s turn";
+        createBoard();
+    }
+
+    function toggleGridSize() {
+        const newSize = (gridSize === 3) ? 4 : 3;
+        const newGameState = Array(newSize * newSize).fill(null);
+
+        for (let row = 0; row < Math.min(gridSize, newSize); row++) {
+            for (let col = 0; col < Math.min(gridSize, newSize); col++) {
+                const oldIndex = row * gridSize + col;
+                const newIndex = row * newSize + col;
+                newGameState[newIndex] = gameState[oldIndex];
+            }
+        }
+
+        gridSize = newSize;
+        gameState = newGameState;
+        resetGame(true);
+    }
+
+    resetButton.addEventListener('click', () => resetGame());
+    toggleSizeButton.addEventListener('click', toggleGridSize);
+
+    // Initialize game
+    resetGame();
