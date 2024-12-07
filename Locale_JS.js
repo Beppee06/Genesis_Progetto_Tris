@@ -1,162 +1,83 @@
-const board = document.getElementById('board'); // Griglia di gioco
-const message = document.getElementById('message'); // Messaggio di stato del gioco
-const resetButton = document.getElementById('reset'); // Bottone per resettare il gioco
-const toggleSizeButton = document.getElementById('toggle-size'); // Bottone per cambiare dimensione della griglia
+const board = document.getElementById('board');
+const message = document.getElementById('message');
+const resetButton = document.getElementById('reset');
+const toggleSizeButton = document.getElementById('toggle-size');
 
-let player1Symbol, player2Symbol; // Simboli dei giocatori
-let currentPlayer; // Giocatore attuale ('Player 1' o 'Player 2')
-let numPiazzamenti = 3; // Dimensione della griglia (3x3 o 4x4)
-let gameState = Array(numPiazzamenti * numPiazzamenti).fill(null); // Stato della griglia
-let gameActive = true; // Flag che indica se il gioco è attivo
-let redCellSelected = false; // Tracks whether a random cell has already been blocked
+let currentPlayer;
+let gridSize = 3;
+let gameState = Array(gridSize * gridSize).fill(null);
+let gameActive = true;
 
-// Funzione per far scegliere a Player 1 il proprio simbolo
-function chooseSymbol() {
-    const choice = prompt("Player 1, scegli X o O").toUpperCase();
-    if (choice !== 'X' && choice !== 'O') {
-        alert("Scelta non valida");
-        chooseSymbol();
-    } else {
-        player1Symbol = choice;
-        player2Symbol = player1Symbol === 'X' ? 'O' : 'X';
-        currentPlayer = 'Player 1'; // Player 1 inizia
-    }
+function selectCurrentFirstPlayer() {
+    let random = Math.round(Math.random());
+    currentPlayer = random === 1 ? 'X' : 'O';
+    console.log("Current player selected:", currentPlayer);
 }
 
-// Crea le condizioni di vittoria dinamiche
-function condizioniVittoria(numPiazzamenti) {
-    const winningConditions = [];
+const winningConditions3x3 = [
+    [0, 1, 2], [3, 4, 5], [6, 7, 8],
+    [0, 3, 6], [1, 4, 7], [2, 5, 8],
+    [0, 4, 8], [2, 4, 6]
+];
 
-    // Orizzontali
-    for (let row = 0; row < numPiazzamenti; row++) {
-        const start = row * numPiazzamenti;
-        const condition = [];
-        for (let col = 0; col < numPiazzamenti; col++) {
-            condition.push(start + col);
-        }
-        winningConditions.push(condition);
-    }
+const winningConditions4x4 = [
+    [0, 1, 2], [1, 2, 3],
+    [4, 5, 6], [5, 6, 7],
+    [8, 9, 10], [9, 10, 11],
+    [12, 13, 14], [13, 14, 15],
+    [0, 4, 8], [1, 5, 9], [2, 6, 10], [3, 7, 11],
+    [4, 8, 12], [5, 9, 13], [6, 10, 14], [7, 11, 15],
+    [0, 5, 10], [1, 6, 11],
+    [4, 9, 14], [5, 10, 15],
+    [2, 5, 8], [3, 6, 9],
+    [6, 9, 12], [7, 10, 13]
+];
 
-    // Verticali
-    for (let col = 0; col < numPiazzamenti; col++) {
-        const condition = [];
-        for (let row = 0; row < numPiazzamenti; row++) {
-            condition.push(row * numPiazzamenti + col);
-        }
-        winningConditions.push(condition);
-    }
-
-    // Diagonali
-    const diagonal1 = [];
-    for (let i = 0; i < numPiazzamenti; i++) {
-        diagonal1.push(i * numPiazzamenti + i);
-    }
-    winningConditions.push(diagonal1);
-    const diagonal2 = [];
-    for (let i = 0; i < numPiazzamenti; i++) {
-        diagonal2.push((i + 1) * numPiazzamenti - (i + 1));
-    }
-    winningConditions.push(diagonal2);
-
-    return winningConditions;
-}
-
-// Controlla se c'è un vincitore o pareggio
 function checkWinner() {
-    const winningConditions = condizioniVittoria(numPiazzamenti);
-    for (let condition of winningConditions) {
-        const allEqual = condition.every(
-            (index) => gameState[index] && gameState[index] === gameState[condition[0]]
-        );
-        if (allEqual) {
-            return gameState[condition[0]] === player1Symbol ? 'Player 1' : 'Player 2';
+    const winningConditions = (gridSize === 3) ? winningConditions3x3 : winningConditions4x4;
+    console.log("Checking winner for grid size:", gridSize);
+    let roundWon = false;
+    for (let i = 0; i < winningConditions.length; i++) {
+        const winCondition = winningConditions[i];
+        let a = gameState[winCondition[0]];
+        let b = gameState[winCondition[1]];
+        let c = gameState[winCondition[2]];
+        if (gridSize === 4 && winCondition[3] !== undefined) {
+            let d = gameState[winCondition[3]];
+            if (a === b && b === c && c === d && a !== null) {
+                roundWon = true;
+                break;
+            }
+        } else if (a === b && b === c && a !== null) {
+            roundWon = true;
+            break;
         }
     }
-    return gameState.includes(null) ? null : 'Draw'; // nessun vincitore
-}
-
-// Aggiorna il messaggio di stato
-function updateMessage(winner) {
-    if (winner === 'Draw') {
-        message.textContent = "Pareggio!";
-    } else if (winner) {
-        message.textContent = `${winner} ha vinto!`;
-    } else {
-        message.textContent = `Turno di ${currentPlayer}`;
-    }
-}
-
-// Gestisce il click su una cella
-function handleCellClick(e) {
-    const cellIndex = e.target.dataset.index;
-
-    if (!gameActive || gameState[cellIndex]) return;
-
-    if (currentPlayer === 'Player 1') {
-        gameState[cellIndex] = player1Symbol;
-    } else {
-        gameState[cellIndex] = player2Symbol;
-    }
-    e.target.textContent = gameState[cellIndex];
-    e.target.classList.add('taken');
-
-    const winner = checkWinner();
-    if (winner) {
+    if (roundWon) {
+        message.textContent = "Player " + currentPlayer + " has won!";
         gameActive = false;
-        updateMessage(winner);
-    } else {
-        currentPlayer = currentPlayer === 'Player 1' ? 'Player 2' : 'Player 1';
-        updateMessage(null);
-
-        // Highlight and block a random cell once during the game
-        selectAndBlockRandomCellOnce();
+        return;
     }
-}
-
-// Trova una cella vuota
-function findEmptyCell() {
-    const celleVuote = gameState
-        .map((value, index) => (value === null ? index : null)) // Trova celle vuote
-        .filter((index) => index !== null); // Rimuove null
-    if (celleVuote.length === 0) return null; // Nessuna cella disponibile
-    return celleVuote[Math.floor(Math.random() * celleVuote.length)];
-}
-
-// Blocca e colora una cella
-function blockCell(cellIndex, color) {
-    if (cellIndex === null || cellIndex < 0 || cellIndex >= gameState.length) return;
-
-    const cellElement = board.querySelector(`[data-index="${cellIndex}"]`);
-    if (cellElement) {
-        cellElement.style.backgroundColor = color;
-        cellElement.style.pointerEvents = 'none'; // Disabilita click
-        cellElement.classList.add('blocked'); // Aggiungi classe opzionale per styling
+    let roundDraw = !gameState.includes(null);
+    if (roundDraw) {
+        message.textContent = "Game is a draw!";
+        gameActive = false;
+        return;
     }
+    currentPlayer = (currentPlayer === 'X') ? 'O' : 'X';
+    message.textContent = "Player " + currentPlayer + "'s turn";
 }
 
-// Scegli e blocca una cella casuale
-function selectAndBlockRandomCellOnce() {
-    if (!redCellSelected) {
-        const randomCellIndex = findEmptyCell(); // Usa la nuova funzione
-        if (randomCellIndex !== null) {
-            blockCell(randomCellIndex, 'red'); // Colora e blocca la cella
-            redCellSelected = true; // Segna la cella come selezionata
-        }
-    }
-}
-
-// Crea la griglia di gioco
 function createBoard() {
+    console.log("Creating board with grid size:", gridSize);
     board.innerHTML = '';
-    board.style.gridTemplateColumns = `repeat(${numPiazzamenti}, 100px)`;
-
-    for (let i = 0; i < numPiazzamenti * numPiazzamenti; i++) {
+    board.style.gridTemplateColumns = `repeat(${gridSize}, 100px)`;
+    for (let i = 0; i < gridSize * gridSize; i++) {
         const cell = document.createElement('div');
         cell.classList.add('cell');
         cell.dataset.index = i;
         cell.addEventListener('click', handleCellClick);
         board.appendChild(cell);
-
         if (gameState[i]) {
             cell.textContent = gameState[i];
             cell.classList.add('taken');
@@ -164,43 +85,109 @@ function createBoard() {
     }
 }
 
-// Resetta il gioco
+function handleCellClick(event) {
+    const clickedCell = event.target;
+    const clickedCellIndex = parseInt(clickedCell.dataset.index);
+
+    if (gameState[clickedCellIndex] || !gameActive) {
+        return;
+    }
+
+    gameState[clickedCellIndex] = currentPlayer;
+    clickedCell.textContent = currentPlayer;
+    clickedCell.classList.add('taken');
+
+    checkWinner();
+}
 function resetGame(keepSymbols = false) {
+    console.log("Resetting game. Keep symbols:", keepSymbols);
+    selectCurrentFirstPlayer();
+    gameActive = true;
     if (!keepSymbols) {
         gameState.fill(null);
-        chooseSymbol();
     }
-    gameActive = true;
-    currentPlayer = 'Player 1'; // Player 1 inizia
-    redCellSelected = false; // Reset the blocked cell
-    message.textContent = `Turno di ${currentPlayer}`;
+
+    message.textContent = "Player " + currentPlayer + "'s turn";
     createBoard();
 }
 
-// Cambia la dimensione della griglia
-function togglenumPiazzamenti() {
-    const newSize = numPiazzamenti === 3 ? 4 : 3; // Alterna tra 3x3 e 4x4
-    const newGameState = Array(newSize * newSize).fill(null);
+function getRandomCorner() {
+    const corners = ["top-left", "top-right", "bottom-left", "bottom-right"];
+    return corners[Math.floor(Math.random() * corners.length)];
+}
 
-    for (let row = 0; row < Math.min(numPiazzamenti, newSize); row++) {
-        for (let col = 0; col < Math.min(numPiazzamenti, newSize); col++) {
-            const oldIndex = row * numPiazzamenti + col;
-            const newIndex = row * newSize + col;
-            newGameState[newIndex] = gameState[oldIndex];
+function saveCurrentPositions(gameState, gridSize) {
+    const tempState = [];
+    for (let row = 0; row < gridSize; row++) {
+        for (let col = 0; col < gridSize; col++) {
+            const index = row * gridSize + col;
+            if (gameState[index] !== null) {
+                tempState.push({ value: gameState[index], row, col });
+            }
         }
     }
-
-    numPiazzamenti = newSize;
-    gameState = newGameState;
-
-    createBoard();
-    message.textContent = `Turno di ${currentPlayer}`;
+    return tempState;
 }
 
-// Aggiunge eventi ai bottoni
-resetButton.addEventListener('click', () => resetGame());
-toggleSizeButton.addEventListener('click', togglenumPiazzamenti);
+function loadNewPositions(tempState, newGameState, gridSize, newSize, corner) {
+    tempState.forEach(item => {
+        let newRow = item.row;
+        let newCol = item.col;
+        switch (corner) {
+            case "top-left":
+                newRow += newSize - gridSize;
+                newCol += newSize - gridSize;
+                break;
+            case "top-right":
+                newRow += newSize - gridSize;
+                break;
+            case "bottom-left":
+                newCol += newSize - gridSize;
+                break;
+        }
 
-// Inizializza il gioco
-chooseSymbol();
-resetGame(true);
+        const newIndex = newRow * newSize + newCol;
+        if (newIndex < newGameState.length) {
+            newGameState[newIndex] = item.value;
+        }
+    });
+}
+
+function toggleGridSize() {
+    console.log("Toggling grid size. Current size:", gridSize);
+    const newSize = (gridSize === 3) ? 4 : 3;
+    const corner = getRandomCorner();
+    const tempState = saveCurrentPositions(gameState, gridSize);
+    const newGameState = Array(newSize * newSize).fill(null);
+    if (newSize < gridSize) {
+        // Ridurre la griglia mantenendo i simboli dalle posizioni scelte dall'angolo
+        tempState.forEach(item => {
+            if (corner === "top-left" && item.row >= 1 && item.col >= 1) {
+                const newIndex = (item.row - 1) * newSize + (item.col - 1);
+                newGameState[newIndex] = item.value;
+            } else if (corner === "top-right" && item.row >= 1 && item.col < gridSize - 1) {
+                const newIndex = (item.row - 1) * newSize + item.col;
+                newGameState[newIndex] = item.value;
+            } else if (corner === "bottom-left" && item.row < gridSize - 1 && item.col >= 1) {
+                const newIndex = item.row * newSize + (item.col - 1);
+                newGameState[newIndex] = item.value;
+            } else if (corner === "bottom-right" && item.row < gridSize - 1 && item.col < gridSize - 1) {
+                const newIndex = item.row * newSize + item.col;
+                newGameState[newIndex] = item.value;
+            }
+        });
+    } else {
+        // Espandere la griglia mantenendo le posizioni relative
+        loadNewPositions(tempState, newGameState, gridSize, newSize, corner);
+    }
+
+    gridSize = newSize;
+    gameState = newGameState;
+    resetGame(true);
+}
+resetButton.addEventListener('click', () => resetGame());
+toggleSizeButton.addEventListener('click', toggleGridSize);
+
+// Initialize game
+resetGame();
+console.log("Game initialized");
